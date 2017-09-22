@@ -6,7 +6,7 @@ set up Kubernetes clusters, leveraging `kubeadm`
 ## Pre-requisites
 
 The scripts will provide all the pre-requisites needed to run a kubernetes cluster. For the bare metal option, 
-you will need two, or more, nodes (metal or VM). For the vagrant option just specify the number of the nodes. 
+you will need one, or more, nodes (metal or VMs). For the vagrant option just specify the number of the nodes. 
 *Warning* Set the v.memory and v.vcpus parameters according to your system resources. 
 **Tested on Ubuntu 16.04 only**
 
@@ -41,7 +41,7 @@ Follow the instructions to setup a K8s cluster either on physical nodes or VMs. 
   + `KUBE_MASTER_IP` - is the IP of the kubernetes master node that listens for connections from the other nodes
   + `KUBEADM_TOKEN` - token generated from `kubeadm token generate` command. This token will later be used to authenticate the nodes that will join the cluster. *Do not share the token with un-authorized users*
 
-  4. Bootstrap the master (need to run as root) and as an argument node's username
+  4. Bootstrap the master (need to run as root) and pass the node's username as an argument
   ```bash
   sudo ./bootstrap-master.sh username
   ```
@@ -62,7 +62,7 @@ Follow the instructions to setup a K8s cluster either on physical nodes or VMs. 
   2. Install the pre-requisites on the worker node.
   ```bash
   cd k8s-cluster-bootstrap
-  sudo ./install-prerequisites.sh`
+  sudo ./install-prerequisites.sh
   ```
 
   3. Copy the contents of `data/config.sh` from the master node under this directory. The file hold the information needed to join the K8s cluster. 
@@ -77,7 +77,7 @@ To test the cluster simply issue the following commands:
 
 + On the master, run `kubectl get node` - you should be able to see all the nodes that have joined the cluster. 
 
-+ Run `kubectl get pod -n kube-system -o wide`. This should show all the containers that have been deployed to run a k8s cluster. 
++ Run `kubectl get pod -n kube-system -o wide`. The command should show all the containers that need to be deployed to run a k8s cluster. 
 Example:
 ```
 calico-etcd
@@ -96,7 +96,7 @@ kube-scheduler
 Follow the instructions to setup a K8s cluster using Vagrant and Virtualbox.  
 
 #### Using Vagrant and Vagrantfile 
-To specify the cluster size, edit `vagrant-up.sh` K8S_NODES (range 0..n) value. Then simply run: 
+To specify the cluster size, edit `vagrant-up.sh` K8S_NODES (range 0..n, where 0 installs only the K8s master) value. Then simply run: 
 ```bash
 ./vagrant-up.sh
 ```
@@ -113,6 +113,25 @@ vagrant ssh k8s-workern
 To cleanup the environment and destroy the VMs run:
 ```bash 
 ./vagrant-cleanup.sh
+```
+
+#### Test the K8s cluster
+Same as for option 1 to test the cluster simply issue the following commands: 
+
++ On the master, run `kubectl get node` - you should be able to see all the nodes that have joined the cluster. 
+
++ Run `kubectl get pod -n kube-system -o wide`. The command should show all the containers that need to be deployed to run a k8s cluster. 
+Example:
+```
+calico-etcd
+calico-node
+calico-policy-controller
+etcd-k8s-master
+kube-api-server
+kube-controller-manager
+kube-dns
+kube-proxy
+kube-scheduler
 ```
 
 ### TROUBLESHOOTING 
