@@ -1,6 +1,12 @@
 #!/bin/bash
 
-# Add keys, update and install pre-requisites 
+# Script should run as root 
+if [[ $EUID -ne 0 ]]; then
+   echo "This script must be run as root. Exiting..." 
+   exit 1
+fi
+
+# This script will: add keys, update and install pre-requisites 
 echo "Updating Ubuntu..."
 apt-get update
 echo "Install os requirements"
@@ -32,7 +38,3 @@ systemctl start docker
 
 echo "Installing Kubernetes Components..."
 apt-get install -y kubelet kubectl kubeadm kubernetes-cni
-
-echo "Exporting Kube Master IP and Kubeadm Token..."
-echo "export KUBE_MASTER_IP=$(ip route get 1 | awk '{print $NF;exit}')" >> config/init.bash
-echo "export KUBEADM_TOKEN=$(kubeadm token generate)" >> config/init.bash
