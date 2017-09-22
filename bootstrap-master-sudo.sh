@@ -18,8 +18,7 @@ source config/init.bash
 # Install Kubernetes
 echo "Starting kubernetes..."
 kubeadm init --kubernetes-version=v1.7.6 --pod-network-cidr=10.244.0.0/16 --apiserver-advertise-address="${KUBE_MASTER_IP}" --token="${KUBEADM_TOKEN}"
-# Schedule Pods on master. 
-kubectl taint nodes --all node-role.kubernetes.io/master-
+
 # Create folder to store kubernetes and network configuration
 mkdir -p /home/$1/.kube
 sudo cp -i /etc/kubernetes/admin.conf /home/$1/.kube/config
@@ -28,3 +27,6 @@ sudo chown $1:$1 -R /home/$1/.kube
 # Install Calico networking
 echo "Installing Pod Network..."
 sudo -u $1 kubectl apply -f config/calico.yaml
+
+# Schedule Pods on master. 
+kubectl taint nodes --all node-role.kubernetes.io/master-
