@@ -58,19 +58,16 @@ base_ip = ENV['K8S_IP_PREFIX'] || '192.168.5.'
 num_nodes = ENV['K8S_NODES'].to_i == 0 ? 0 : ENV['K8S_NODES'].to_i
 
 provision_every_node = <<SCRIPT
+set -e
+set -x
 ## setup the environment file. Export the env-vars passed as args to 'vagrant up'
+# This script will also: add keys, update and install pre-requisites
 echo Args passed: [[ $@ ]]
 cat <<EOF >/etc/profile.d/envvar.sh
 export http_proxy='#{http_proxy}'
 export https_proxy='#{https_proxy}'
 EOF
-source /etc/profile.d/envvar.sh
-SCRIPT
-
-prerequisites_every_node = <<SCRIPT
-set -e
-set -x
-# Add keys, update and install pre-requisites 
+source /etc/profile.d/envvar.sh 
 echo "Updating Ubuntu..."
 apt-get update
 echo "Install os requirements"
@@ -103,28 +100,32 @@ SCRIPT
 bootstrap_master = <<SCRIPT
 set -e
 set -x
+# Create token and export it with kube master IP
 echo "Exporting Kube Master IP and Kubeadm Token..."
-echo "export KUBE_MASTER_IP=$(hostname -I | cut -f2 -d' ')" >> /vagrant/config/init.bash
-echo "export KUBEADM_TOKEN=$(kubeadm token generate)" >> /vagrant/config/init.bash
-
-source /vagrant/config/init.bash
-kubeadm init --pod-network-cidr=10.244.0.0/16 --apiserver-advertise-address="${KUBE_MASTER_IP}" --token="${KUBEADM_TOKEN}"
-# By now the master node should be ready!
+echo "export KUBE_MASTER_IP=$(hostname -I | cut -f2 -d' ')" >> /vagrant/config/init.sh
+echo "export KUBEADM_TOKEN=$(kubeadm token generate)" >> /vagrant/config/init.sh
+source /vagrant/config/init.sh
+# Install Kubernetes
+echo "Starting kubernetes..."
+kubeadm init --kubernetes-version=v1.7.6 --pod-network-cidr=192.168.0.0/16 --apiserver-advertise-address="${KUBE_MASTER_IP}" --token="${KUBEADM_TOKEN}"
+# Create folder to store kubernetes and network configuration
 mkdir -p /home/vagrant/.kube
-cp -i /etc/kubernetes/admin.conf /home/vagrant/.kube/config
-chown vagrant:vagrant -R /home/vagrant/.kube
-SCRIPT
-
-bootstrap_master_user = <<SCRIPT
-# Install Calico networking
+sudo cp -i /etc/kubernetes/admin.conf /home/vagrant/.kube/config
+sudo chown vagrant:vagrant -R /home/vagrant/.kube
+# Install Calico networking as user
+sudo -u vagrant -H bash << EOF
+echo "Installing Pod Network..."
 kubectl apply -f /vagrant/config/calico.yaml
+# Schedule Pods on master. 
+kubectl taint nodes --all node-role.kubernetes.io/master-
+EOF
 SCRIPT
 
 bootstrap_worker = <<SCRIPT
 # Kubeadm join expects kube_master_ip and kubeadm_token
 set -e
 set -x
-source /vagrant/config/init.bash
+source /vagrant/config/init.sh
 kubeadm join --token "${KUBEADM_TOKEN}"  "${KUBE_MASTER_IP}":6443
 SCRIPT
 
@@ -164,14 +165,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
             #s.args = [http_proxy, https_proxy]
         end
         k8smaster.vm.provision "shell" do |s|
-            s.inline = prerequisites_every_node
-        end
-        k8smaster.vm.provision "shell" do |s|
             s.inline = bootstrap_master
-        end
-        k8smaster.vm.provision "shell" do |s|
-            s.inline = bootstrap_master_user
-            s.privileged = false
         end
     end
 
@@ -191,9 +185,6 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
             node.vm.provision "shell" do |s|
                 s.inline = provision_every_node
                 #s.args = [http_proxy, https_proxy]
-            end
-            node.vm.provision "shell" do |s|
-                s.inline = prerequisites_every_node
             end
             node.vm.provision "shell" do |s|
                 s.inline = bootstrap_worker

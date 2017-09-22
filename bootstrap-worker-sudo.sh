@@ -6,5 +6,5 @@ if [[ $EUID -ne 0 ]]; then
 fi
 # Kubeadm join expects kube_master_ip and kubeadm_token
 set -e
-source config/init.bash
+source config/init.sh
 kubeadm join --token "${KUBEADM_TOKEN}"  "${KUBE_MASTER_IP}":6443

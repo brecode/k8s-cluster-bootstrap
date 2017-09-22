@@ -12,12 +12,12 @@ fi
 set -e
 # Create token and export it with kube master IP
 echo "Exporting Kube Master IP and Kubeadm Token..."
-echo "export KUBE_MASTER_IP=$(hostname -I | cut -f2 -d' ')" >> config/init.bash
-echo "export KUBEADM_TOKEN=$(kubeadm token generate)" >> config/init.bash
-source config/init.bash
+echo "export KUBE_MASTER_IP=$(hostname -I | cut -f2 -d' ')" >> config/init.sh
+echo "export KUBEADM_TOKEN=$(kubeadm token generate)" >> config/init.sh
+source config/init.sh
 # Install Kubernetes
 echo "Starting kubernetes..."
-kubeadm init --kubernetes-version=v1.7.6 --pod-network-cidr=10.244.0.0/16 --apiserver-advertise-address="${KUBE_MASTER_IP}" --token="${KUBEADM_TOKEN}"
+kubeadm init --kubernetes-version=v1.7.6 --pod-network-cidr=192.168.0.0/16 --apiserver-advertise-address="${KUBE_MASTER_IP}" --token="${KUBEADM_TOKEN}"
 
 # Create folder to store kubernetes and network configuration
 mkdir -p /home/$1/.kube
@@ -29,4 +29,4 @@ echo "Installing Pod Network..."
 sudo -u $1 kubectl apply -f config/calico.yaml
 
 # Schedule Pods on master. 
-kubectl taint nodes --all node-role.kubernetes.io/master-
+sudo -u $1 kubectl taint nodes --all node-role.kubernetes.io/master-

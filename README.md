@@ -33,25 +33,24 @@ Follow the instructions to setup a K8s cluster either on physical nodes or VMs. 
   2. Install the pre-requisites on the master. This script will install docker-ce/kubelet/kubeadm/kubernetes-cni packages
   ```bash
   cd k8s-cluster-bootstrap
-  sudo ./install-prerequisites.bash
+  sudo ./install-prerequisites.sh
   ```
 
-  3. Make sure init.bash under `config` is empty. This is the file where the previous script stores 
+  3. Make sure init.sh under `config` is empty. This is the file where the previous script stores 
   KUBE_MASTER_IP and KUBEADM_TOKEN variables.
+  + `KUBE_MASTER_IP` - is the IP of the kubernetes master node that listens for connections from the other nodes
+  + `KUBEADM_TOKEN` - token generated from `kubeadm token generate` command. This token will later be used to authenticate the nodes that will join the cluster. *Do not share the token with un-authorized users*
 
-  a. `KUBE_MASTER_IP` - is the IP of the kubernetes master node that listens for connections from the other nodes
-  b. `KUBEADM_TOKEN` - token generated from `kubeadm token generate` command. This token will later be used to authenticate the nodes that will join the cluster. *Do not share the token with un-authorized users*
-
-  4. Bootstrap the master (need to run as root)
-  ``` bash
-  sudo ./bootstrap-master.bash
+  4. Bootstrap the master (need to run as root) and as an argument node's username
+  ```bash
+  sudo ./bootstrap-master.sh username
   ```
 
   5. Installs the follwoing:
 
-  a. The components that K8s Master should have (apiserver, scheduler, controller-manager and etcd)
-  b. Calico networking 
-  c. Copies `/etc/kubernetes/admin.conf` to `~/.kube/config` - Connection and credential information to connect to the cluster are stored here, as well as networking schemas and information from Calico.  K8s master node has also been marked as schedulable, so that pods can be deployed. If there is no need for more nodes (workers) stop here. If a bigger cluster is needed proceed to the next section.
++ The components that K8s Master should have (apiserver, scheduler, controller-manager and etcd)
++ Calico networking 
++ Copies `/etc/kubernetes/admin.conf` to `~/.kube/config` - Connection and credential information to connect to the cluster are stored here, as well as networking schemas and information from Calico.  K8s master node has also been marked as schedulable, so that pods can be deployed. If there is no need for more nodes (workers) stop here. If a bigger cluster is needed proceed to the next section.
 
 #### Setting up a worker node
 
@@ -63,33 +62,34 @@ Follow the instructions to setup a K8s cluster either on physical nodes or VMs. 
   2. Install the pre-requisites on the worker node.
   ```bash
   cd k8s-cluster-bootstrap
-  sudo ./install-prerequisites.bash`
+  sudo ./install-prerequisites.sh`
   ```
 
-  3. Copy the `data/config.bash` from the master node under this directory. The file hold the information needed to join the K8s cluster. 
+  3. Copy the contents of `data/config.sh` from the master node under this directory. The file hold the information needed to join the K8s cluster. 
 
   4. Setup the node to join the cluster. 
   ```bash
-  ./bootstrap-worker.bash
+  ./bootstrap-worker.sh
   ```
 
 #### Test the K8s cluster
 To test the cluster simply issue the following commands: 
 
-  a. On the master, run `kubectl get node` - you should be able to see all the nodes that have joined the cluster. 
++ On the master, run `kubectl get node` - you should be able to see all the nodes that have joined the cluster. 
 
-  b. Run `kubectl get pod -o wide`. This should show all the containers that have been deployed to run a k8s cluster. Example:
-  ```
-  calico-etcd
-  calico-node
-  calico-policy-controller
-  etcd-k8s-master
-  kube-api-server
-  kube-controller-manager
-  kube-dns
-  kube-proxy
-  kube-scheduler
-  ```
++ Run `kubectl get pod -o wide`. This should show all the containers that have been deployed to run a k8s cluster. 
+Example:
+```
+calico-etcd
+calico-node
+calico-policy-controller
+etcd-k8s-master
+kube-api-server
+kube-controller-manager
+kube-dns
+kube-proxy
+kube-scheduler
+```
 
 ### Option #2 - Vagrant VMs
 
@@ -110,7 +110,7 @@ vagrant ssh k8s-worker1
 vagrant ssh k8s-workern
 ```
 
-To cleanup and destroy the VMs run:
+To cleanup the environment and destroy the VMs run:
 ```bash 
 ./vagrant-cleanup.sh
 ```

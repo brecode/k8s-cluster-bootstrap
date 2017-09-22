@@ -1,6 +1,6 @@
 #!/bin/bash
 
-rm config/init.bash
-touch config/init.bash
+rm config/init.sh
+touch config/init.sh
 vagrant destroy -f
 rm -rf .vagrant
