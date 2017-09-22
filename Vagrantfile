@@ -54,7 +54,7 @@ end
 http_proxy = ENV['HTTP_PROXY'] || ENV['http_proxy'] || ''
 https_proxy = ENV['HTTPS_PROXY'] || ENV['https_proxy'] || ''
 node_os = ENV['K8S_NODE_OS'] || 'ubuntu'
-base_ip = ENV['K8S_IP_PREFIX'] || '192.168.5.'
+base_ip = ENV['K8S_IP_PREFIX'] || '193.168.5.'
 num_nodes = ENV['K8S_NODES'].to_i == 0 ? 0 : ENV['K8S_NODES'].to_i
 
 provision_every_node = <<SCRIPT
@@ -160,6 +160,8 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
             v.memory = 4096
             v.cpus = 2
         end
+        k8smaster_ip = base_ip + "51"
+        k8smaster.vm.provision :shell, inline: "sed 's/127\.0\.0\.1.*k8s.*/193\.168\.5\.51 k8s-master/' -i /etc/hosts"
         k8smaster.vm.provision "shell" do |s|
             s.inline = provision_every_node
             #s.args = [http_proxy, https_proxy]
@@ -181,7 +183,8 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
                 v.memory = 4096
                 v.cpus = 2
             end
-
+            node_ip_last = n+10
+            node.vm.provision :shell, inline: "sed 's/127\.0\.0\.1.*k8s.*/193\.168\.5\.#{node_ip_last} #{node_name}/' -i /etc/hosts"
             node.vm.provision "shell" do |s|
                 s.inline = provision_every_node
                 #s.args = [http_proxy, https_proxy]

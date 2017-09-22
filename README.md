@@ -77,7 +77,7 @@ To test the cluster simply issue the following commands:
 
 + On the master, run `kubectl get node` - you should be able to see all the nodes that have joined the cluster. 
 
-+ Run `kubectl get pod -o wide`. This should show all the containers that have been deployed to run a k8s cluster. 
++ Run `kubectl get pod -n kube-system -o wide`. This should show all the containers that have been deployed to run a k8s cluster. 
 Example:
 ```
 calico-etcd
@@ -114,3 +114,7 @@ To cleanup the environment and destroy the VMs run:
 ```bash 
 ./vagrant-cleanup.sh
 ```
+
+### TROUBLESHOOTING 
+
+From `https://kubernetes.io/docs/setup/independent/create-cluster-kubeadm/` If you are using VirtualBox (directly or via Vagrant), you will need to ensure that hostname -i returns a routable IP address (i.e. one on the second network interface, not the first one). By default, it doesn’t do this and kubelet ends-up using first non-loopback network interface, which is usually NATed. Workaround: Modify /etc/hosts, take a look at this Vagrantfileubuntu-vagrantfile for how this can be achieved. This is currently added in the Vagrantfile. Has not been added to the scripts and could be an additional step for VirtualBox users
