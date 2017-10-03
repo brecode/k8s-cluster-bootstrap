@@ -95,6 +95,9 @@ rm -rf /var/lib/docker/*
 systemctl start docker
 echo "Installing Kubernetes Components..."
 apt-get install -y kubelet kubectl kubeadm kubernetes-cni
+sed -i '3s/^/Environment="KUBELET_EXTRA_ARGS=--fail-swap-on=false"\\n/' /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
+systemctl daemon-reload
+systemctl restart kubelet
 SCRIPT
 
 bootstrap_master = <<SCRIPT
