@@ -32,7 +32,7 @@ Follow the instructions to setup a K8s cluster either on physical nodes or VMs. 
 
   2. Install the pre-requisites on the master. This script will install docker-ce/kubelet/kubeadm/kubernetes-cni packages
   ```bash
-  cd k8s-cluster-bootstrap
+  cd k8s-cluster-bootstrap/scripts
   sudo ./install-prerequisites.sh
   ```
 
@@ -57,6 +57,7 @@ Follow the instructions to setup a K8s cluster either on physical nodes or VMs. 
   1. Clone this git repository on to your worker node
   ```bash
   git clone https://github.com/brecode/k8s-cluster-bootstrap.git
+  cd k8s-cluster-bootstrap/scripts
   ```
 
   2. Install the pre-requisites on the worker node.
@@ -98,6 +99,7 @@ Follow the instructions to setup a K8s cluster using Vagrant and Virtualbox.
 #### Using Vagrant and Vagrantfile 
 To specify the cluster size, edit `vagrant-up.sh` K8S_NODES (range 0..n, where 0 installs only the K8s master) value. Then simply run: 
 ```bash
+cd vagrant-scripts/
 ./vagrant-up.sh
 ```
 
@@ -132,6 +134,12 @@ kube-controller-manager
 kube-dns
 kube-proxy
 kube-scheduler
+```
+
+### EXAMPLE
+To test the new container runtime, first vagrant ssh into the vm and then browse into the example folder `cd /vagrant/example` and issue the following command:
+```
+kubectl create -f pod.yaml
 ```
 
 ### TROUBLESHOOTING 

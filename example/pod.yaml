@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: gluster-pod1
+  labels:
+    name: gluster-pod1
+spec:
+  containers:
+  - name: gluster-pod1
+    image: gcr.io/google_containers/nginx-slim:0.8
+    ports:
+    - name: web
+      containerPort: 80

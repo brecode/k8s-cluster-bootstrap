@@ -95,31 +95,67 @@ rm -rf /var/lib/docker/*
 systemctl start docker
 echo "Installing Kubernetes Components..."
 apt-get install -y kubelet kubectl kubeadm kubernetes-cni
-sed -i '3s/^/Environment="KUBELET_EXTRA_ARGS=--fail-swap-on=false"\\n/' /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
+touch /var/run/contivshim.sock
+sed -i '4 a Environment="KUBELET_EXTRA_ARGS=--fail-swap-on=false --container-runtime=remote --container-runtime-endpoint=/var/run/contivshim.sock --feature-gates=AllAlpha=true"' /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
 systemctl daemon-reload
 systemctl restart kubelet
+echo "Downloading Go"
+curl --silent https://storage.googleapis.com/golang/go1.9.linux-amd64.tar.gz > /tmp/go.tar.gz
+echo "Extracting Go"
+tar -xvzf /tmp/go.tar.gz --directory /home/vagrant >/dev/null 2>&1
+echo "Setting Go environment variables"
+mkdir /home/vagrant/gopath
+chmod -R 777 /home/vagrant/gopath
+echo 'export GOROOT="/home/vagrant/go"' >> /home/vagrant/.bashrc
+echo 'export GOPATH="/home/vagrant/gopath"' >> /home/vagrant/.bashrc
+echo 'export PATH="$PATH:$GOROOT/bin:$GOPATH/bin"' >> /home/vagrant/.bashrc
+update-locale LANG=en_US.UTF-8 LANGUAGE=en_US.UTF-8 LC_ALL=en_US.UTF-8
+echo 'All done!'
 SCRIPT
 
 bootstrap_master = <<SCRIPT
 set -e
 set -x
-# Create token and export it with kube master IP
+# --------------------------------------------------------
+# ---> Create token and export it with kube master IP <---
+# --------------------------------------------------------
 echo "Exporting Kube Master IP and Kubeadm Token..."
 echo "export KUBE_MASTER_IP=$(hostname -I | cut -f2 -d' ')" >> /vagrant/config/init.sh
 echo "export KUBEADM_TOKEN=$(kubeadm token generate)" >> /vagrant/config/init.sh
 source /vagrant/config/init.sh
-# Install Kubernetes
-echo "Starting kubernetes..."
-kubeadm init --kubernetes-version=v1.7.6 --pod-network-cidr=192.168.0.0/16 --apiserver-advertise-address="${KUBE_MASTER_IP}" --token="${KUBEADM_TOKEN}"
-# Create folder to store kubernetes and network configuration
+# --------------------------------------------------------
+# ------------> Download or build ContivShim <------------
+# --------------------------------------------------------
+echo "Downloading Contivshim"
+touch /tmp/contivshim.log
+tar -xvzf /vagrant/contivshim.tar.gz --directory /home/vagrant >/dev/null 2>&1
+# instructions on how to build - coming soon...
+# --------------------------------------------------------
+# --------------> Start ETCDv3 Instance <-----------------
+# --------------------------------------------------------
+docker run -d -p 25552:25552 --rm \
+    quay.io/coreos/etcd:v3.2.0 /usr/local/bin/etcd \
+    -advertise-client-urls http://0.0.0.0:25552 \
+    -listen-client-urls http://0.0.0.0:25552
+# --------------------------------------------------------
+# ----------------> Start GRPC Server <-------------------
+# --------------------------------------------------------
+echo "Starting GRPC Server"
+nohup /home/vagrant/contiv-cri --v=2 0<&- &> /tmp/contivshim.log &
+# --------------------------------------------------------
+# --------------> Kubeadm & Networking <------------------
+# --------------------------------------------------------
+kubeadm reset
+kubeadm init --pod-network-cidr=192.168.0.0/16 --apiserver-advertise-address="${KUBE_MASTER_IP}" --token="${KUBEADM_TOKEN}"
+echo "Create folder to store kubernetes and network configuration"
 mkdir -p /home/vagrant/.kube
 sudo cp -i /etc/kubernetes/admin.conf /home/vagrant/.kube/config
 sudo chown vagrant:vagrant -R /home/vagrant/.kube
-# Install Calico networking as user
+echo "Installing Calico networking as user"
 sudo -u vagrant -H bash << EOF
 echo "Installing Pod Network..."
-kubectl apply -f /vagrant/config/calico.yaml
-# Schedule Pods on master. 
+kubectl apply -f https://docs.projectcalico.org/v2.6/getting-started/kubernetes/installation/hosted/kubeadm/1.6/calico.yaml
+echo "Schedule Pods on master"
 kubectl taint nodes --all node-role.kubernetes.io/master-
 EOF
 SCRIPT
