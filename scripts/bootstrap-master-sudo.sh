@@ -39,7 +39,7 @@ docker run -d -p 25552:25552 --rm \
 # ----------------> Start GRPC Server <-------------------
 # --------------------------------------------------------
 echo "Starting GRPC Server"
-nohup /home/vagrant/contiv-cri &> /tmp/contivshim.log&
+nohup /home/vagrant/contiv-cri --v=2 0<&- &> /tmp/contivshim.log &
 
 # --------------------------------------------------------
 # --------------> Kubeadm & Networking <------------------
