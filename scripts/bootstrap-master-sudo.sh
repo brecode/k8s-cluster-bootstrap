@@ -59,3 +59,4 @@ kubectl apply -f https://docs.projectcalico.org/v2.6/getting-started/kubernetes/
 
 echo "Schedule Pods on master"
 kubectl taint nodes --all node-role.kubernetes.io/master-
+EOF
